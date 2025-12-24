@@ -9,11 +9,8 @@ fn main() {
         io::stdin().read_line(&mut command).unwrap();
 
         let mut whole_command = command.split_whitespace();
-        let command = match whole_command.next() {
-            Some(command) => command,
-            _ => "",
-        };
-        let arguments: String = whole_command.collect();
+        let command = whole_command.next().unwrap_or("");
+        let arguments: String = whole_command.collect::<Vec<&str>>().join(" ");
 
         match command.trim() {
             "exit" => break,

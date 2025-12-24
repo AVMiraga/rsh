@@ -1,7 +1,13 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
+const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type"];
+
 fn main() {
+    enum CommandTypes {
+        Builtin,
+    }
+
     loop {
         let mut command = String::new();
         print!("$ ");
@@ -16,6 +22,13 @@ fn main() {
             "exit" => break,
             "echo" => {
                 println!("{}", arguments);
+            }
+            "type" => {
+                if VALID_COMMANDS_BUILTIN.contains(&arguments.trim()) {
+                    println!("{} is a shell builtin", arguments.trim());
+                } else {
+                    println!("{}: not found", arguments.trim());
+                }
             }
             _ => println!("{}: command not found", &command.trim()),
         }

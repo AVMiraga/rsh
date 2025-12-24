@@ -1,8 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
-const VALID_COMMANDS: &[&str] = &["exit"];
-
 fn main() {
     loop {
         let mut command = String::new();
@@ -10,12 +8,19 @@ fn main() {
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut command).unwrap();
 
-        if !VALID_COMMANDS.contains(&command.as_str().trim()) {
-            println!("{}: command not found", &command.trim());
-        }
+        let mut whole_command = command.split_whitespace();
+        let command = match whole_command.next() {
+            Some(command) => command,
+            _ => "",
+        };
+        let arguments: String = whole_command.collect();
 
-        if command.trim() == "exit" {
-            break;
+        match command.trim() {
+            "exit" => break,
+            "echo" => {
+                println!("{}", arguments);
+            }
+            _ => println!("{}: command not found", &command.trim()),
         }
     }
 }

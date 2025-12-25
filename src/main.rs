@@ -1,13 +1,20 @@
+use pathsearch::find_executable_in_path;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
+// #[cfg(windows)]
+// const PATH_SEP: char = ';';
+// #[cfg(not(windows))]
+// const PATH_SEP: char = ':';
+
 const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type"];
 
-fn main() {
-    enum CommandTypes {
-        Builtin,
-    }
+#[test]
+fn testing() {
+    dbg!(find_executable_in_path("lse"));
+}
 
+fn main() {
     loop {
         let mut command = String::new();
         print!("$ ");
@@ -26,6 +33,8 @@ fn main() {
             "type" => {
                 if VALID_COMMANDS_BUILTIN.contains(&arguments.trim()) {
                     println!("{} is a shell builtin", arguments.trim());
+                } else if let Some(path) = find_executable_in_path(&arguments.trim()) {
+                    println!("{} is {}", &arguments.trim(), path.to_str().unwrap());
                 } else {
                     println!("{}: not found", arguments.trim());
                 }

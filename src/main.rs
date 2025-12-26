@@ -61,7 +61,10 @@ fn main() {
                     &arguments[0].replace("~", env::home_dir().unwrap().to_str().unwrap());
                 let new_dir = Path::new(new_arg).to_path_buf();
 
-                set_current_dir(new_dir).unwrap();
+                match set_current_dir(new_dir) {
+                    Ok(_) => {}
+                    Err(_) => println!("cd: {}: No such file or directory", new_arg),
+                }
             }
             _ => match find_executable_in_path(command.trim()) {
                 Some(_) => {

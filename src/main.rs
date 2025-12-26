@@ -7,7 +7,7 @@ use std::process::Command;
 // #[cfg(not(windows))]
 // const PATH_SEP: char = ':';
 
-const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type"];
+const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd"];
 
 #[test]
 fn testing() {
@@ -42,6 +42,9 @@ fn main() {
                 } else {
                     println!("{}: not found", arguments.join(" ").trim());
                 }
+            }
+            "pwd" => {
+                println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
             }
             _ => match find_executable_in_path(command.trim()) {
                 Some(_) => {

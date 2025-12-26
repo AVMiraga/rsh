@@ -135,6 +135,7 @@ fn main() {
                         std::fs::write(to_file, out.stdout).unwrap();
                     } else {
                         io::stdout().write_all(&out.stdout).unwrap();
+                        println!();
                     }
                 }
                 _ => println!("{}: command not found", &command.trim()),

@@ -2,7 +2,7 @@ use pathsearch::find_executable_in_path;
 use shlex::split;
 use std::env;
 use std::env::{current_dir, set_current_dir};
-use std::io::{self, Stdout, Write};
+use std::io::{self, Write, stderr};
 use std::path::Path;
 use std::process::Command;
 
@@ -131,14 +131,13 @@ fn main() {
                         .output()
                         .unwrap();
 
-                    let stdout_str = String::from_utf8_lossy(&out.stdout);
-
                     if is_redirection && out.status.success() {
                         std::fs::write(to_file, &out.stdout).unwrap();
                     } else {
-                        io::stdout().write_all(stdout_str.as_bytes()).unwrap();
+                        io::stdout().write_all(&out.stdout).unwrap();
                         io::stdout().flush().unwrap();
                     }
+                    stderr().write_all(&out.stderr).unwrap();
                 }
                 _ => println!("{}: command not found", &command.trim()),
             },

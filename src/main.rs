@@ -1,5 +1,8 @@
 use pathsearch::find_executable_in_path;
+use std::env;
+use std::env::{current_dir, set_current_dir};
 use std::io::{self, Write};
+use std::path::Path;
 use std::process::Command;
 
 // #[cfg(windows)]
@@ -7,7 +10,7 @@ use std::process::Command;
 // #[cfg(not(windows))]
 // const PATH_SEP: char = ':';
 
-const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd"];
+const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", ".", ".."];
 
 #[test]
 fn testing() {
@@ -44,7 +47,21 @@ fn main() {
                 }
             }
             "pwd" => {
-                println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
+                println!("{}", current_dir().unwrap().to_str().unwrap());
+            }
+            "." => {
+                set_current_dir(current_dir().unwrap()).unwrap();
+            }
+            ".." => {
+                let new_dir = current_dir().unwrap().pop().to_string();
+                set_current_dir(new_dir).unwrap();
+            }
+            "cd" => {
+                let new_arg =
+                    &arguments[0].replace("~", env::home_dir().unwrap().to_str().unwrap());
+                let new_dir = Path::new(new_arg).to_path_buf();
+
+                set_current_dir(new_dir).unwrap();
             }
             _ => match find_executable_in_path(command.trim()) {
                 Some(_) => {

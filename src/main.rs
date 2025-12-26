@@ -1,4 +1,5 @@
 use pathsearch::find_executable_in_path;
+use shlex::split;
 use std::env;
 use std::env::{current_dir, set_current_dir};
 use std::io::{self, Write};
@@ -14,7 +15,15 @@ const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", "
 
 #[test]
 fn testing() {
-    dbg!(find_executable_in_path("lse"));
+    let command = String::from("echo 'hello   world'");
+
+    let whole_command = split(command.trim()).unwrap_or([].to_vec());
+    let command = whole_command.first().unwrap();
+    let arguments = whole_command[1..].to_vec();
+
+    dbg!(&arguments);
+    dbg!(&command);
+    dbg!(whole_command);
 }
 
 fn main() {
@@ -24,9 +33,9 @@ fn main() {
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut command).unwrap();
 
-        let mut whole_command = command.split_whitespace();
-        let command = whole_command.next().unwrap_or("");
-        let arguments = whole_command.collect::<Vec<&str>>();
+        let whole_command = split(command.trim()).unwrap_or([].to_vec());
+        let command = whole_command.first().unwrap();
+        let arguments = whole_command[1..].to_vec();
 
         match command.trim() {
             "exit" => break,

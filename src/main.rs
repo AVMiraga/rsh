@@ -15,11 +15,36 @@ const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", "
 
 #[test]
 fn testing() {
-    let command = String::from("echo 'hello   world'");
+    let command = String::from("echo hello hello > output.txt");
 
     let whole_command = split(command.trim()).unwrap_or([].to_vec());
     let command = whole_command.first().unwrap();
     let arguments = whole_command[1..].to_vec();
+
+    let mut argument_iter = arguments.iter();
+    let mut is_redirection = false;
+    let mut to_file = "";
+    let mut from_content: Vec<String> = vec![];
+
+    match argument_iter.position(|s| s == ">" || s == "1>") {
+        Some(redirect_pos) => {
+            is_redirection = true;
+            if let Some(file) = argument_iter.next() {
+                to_file = file;
+            }
+            from_content = arguments[..redirect_pos].to_vec();
+        }
+        None => {}
+    }
+
+    dbg!(&to_file);
+    dbg!(&from_content);
+
+    // if let Some(redirect_operator_pos) = argument_iter.position(|s| s == ">" || s == "1>") {
+    //     if let Some(filename) = argument_iter.next() {
+    //         dbg!(filename);
+    //     }
+    // }
 
     dbg!(&arguments);
     dbg!(&command);
@@ -37,10 +62,30 @@ fn main() {
         let command = whole_command.first().unwrap();
         let arguments = whole_command[1..].to_vec();
 
+        let mut argument_iter = arguments.iter();
+        let mut is_redirection = false;
+        let mut to_file = "";
+        let mut from_content: Vec<String> = vec![];
+
+        match argument_iter.position(|s| s == ">" || s == "1>") {
+            Some(redirect_pos) => {
+                is_redirection = true;
+                if let Some(file) = argument_iter.next() {
+                    to_file = file;
+                }
+                from_content = arguments[..redirect_pos].to_vec();
+            }
+            None => {}
+        }
+
         match command.trim() {
             "exit" => break,
             "echo" => {
-                println!("{}", arguments.join(" ").trim());
+                if is_redirection {
+                    std::fs::write(to_file, from_content.join(" ")).unwrap();
+                } else {
+                    println!("{}", arguments.join(" ").trim());
+                }
             }
             "type" => {
                 if VALID_COMMANDS_BUILTIN.contains(&arguments.join(" ").trim()) {
@@ -78,11 +123,19 @@ fn main() {
             _ => match find_executable_in_path(command.trim()) {
                 Some(_) => {
                     let out = Command::new(command)
-                        .args(arguments)
+                        .args(if is_redirection {
+                            &from_content
+                        } else {
+                            &arguments
+                        })
                         .output()
                         .expect("failed to execute process");
 
-                    io::stdout().write_all(&out.stdout).unwrap();
+                    if is_redirection && out.status.success() {
+                        std::fs::write(to_file, out.stdout).unwrap();
+                    } else {
+                        io::stdout().write_all(&out.stdout).unwrap();
+                    }
                 }
                 _ => println!("{}: command not found", &command.trim()),
             },

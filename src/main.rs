@@ -28,7 +28,7 @@ fn main() {
         match command.trim() {
             "exit" => break,
             "echo" => {
-                print!("{}", arguments.join(" "));
+                print!("{}", arguments.join(" ").trim());
             }
             "type" => {
                 if VALID_COMMANDS_BUILTIN.contains(&arguments.join(" ").trim()) {

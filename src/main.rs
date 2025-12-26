@@ -1,6 +1,6 @@
 use pathsearch::find_executable_in_path;
-#[allow(unused_imports)]
 use std::io::{self, Write};
+use std::process::Command;
 
 // #[cfg(windows)]
 // const PATH_SEP: char = ';';
@@ -23,23 +23,37 @@ fn main() {
 
         let mut whole_command = command.split_whitespace();
         let command = whole_command.next().unwrap_or("");
-        let arguments: String = whole_command.collect::<Vec<&str>>().join(" ");
+        let arguments = whole_command.collect::<Vec<&str>>();
 
         match command.trim() {
             "exit" => break,
             "echo" => {
-                println!("{}", arguments);
+                print!("{}", arguments.join(" "));
             }
             "type" => {
-                if VALID_COMMANDS_BUILTIN.contains(&arguments.trim()) {
-                    println!("{} is a shell builtin", arguments.trim());
-                } else if let Some(path) = find_executable_in_path(&arguments.trim()) {
-                    println!("{} is {}", &arguments.trim(), path.to_str().unwrap());
+                if VALID_COMMANDS_BUILTIN.contains(&arguments.join(" ").trim()) {
+                    println!("{} is a shell builtin", arguments.join(" ").trim());
+                } else if let Some(path) = find_executable_in_path(&arguments.join(" ").trim()) {
+                    println!(
+                        "{} is {}",
+                        &arguments.join(" ").trim(),
+                        path.to_str().unwrap()
+                    );
                 } else {
-                    println!("{}: not found", arguments.trim());
+                    println!("{}: not found", arguments.join(" ").trim());
                 }
             }
-            _ => println!("{}: command not found", &command.trim()),
+            _ => match find_executable_in_path(command.trim()) {
+                Some(_) => {
+                    let out = Command::new(command)
+                        .args(arguments)
+                        .output()
+                        .expect("failed to execute process");
+
+                    io::stdout().write_all(&out.stdout).unwrap();
+                }
+                _ => println!("{}: command not found", &command.trim()),
+            },
         }
     }
 }

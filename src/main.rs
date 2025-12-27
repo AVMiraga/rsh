@@ -131,8 +131,9 @@ fn main() {
                         .output()
                         .unwrap();
 
-                    if is_redirection && out.status.success() {
+                    if is_redirection {
                         std::fs::write(to_file, &out.stdout).unwrap();
+                        stderr().write_all(&out.stderr).unwrap();
                     } else {
                         stdout().write_all(&out.stdout).unwrap();
                         if out.stdout.last() != Some(&b'\n') {

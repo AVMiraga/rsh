@@ -136,7 +136,7 @@ fn main() {
                     } else {
                         stdout().write_all(&out.stdout).unwrap();
                         if out.stdout.last() != Some(&b'\n') {
-                            println!("newline");
+                            println!();
                         }
                         stderr().write_all(&out.stderr).unwrap();
                     }

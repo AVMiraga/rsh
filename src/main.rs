@@ -64,12 +64,27 @@ fn main() {
 
         let mut argument_iter = arguments.iter();
         let mut is_redirection = false;
+        let mut is_err_redirection = false;
         let mut to_file = "";
         let mut from_content: Vec<String> = vec![];
 
         match argument_iter.position(|s| s == ">" || s == "1>") {
             Some(redirect_pos) => {
                 is_redirection = true;
+                if let Some(file) = argument_iter.next() {
+                    to_file = file;
+                }
+                from_content = arguments[..redirect_pos].to_vec();
+            }
+            None => {}
+        }
+
+        let mut argument_iter = arguments.iter();
+
+        match argument_iter.position(|s| s == "2>") {
+            Some(redirect_pos) => {
+                is_err_redirection = true;
+                is_redirection = false;
                 if let Some(file) = argument_iter.next() {
                     to_file = file;
                 }
@@ -123,17 +138,19 @@ fn main() {
             _ => match find_executable_in_path(command.trim()) {
                 Some(_) => {
                     let out = Command::new(command)
-                        .args(if is_redirection {
+                        .args(if is_redirection || is_err_redirection {
                             &from_content
                         } else {
                             &arguments
                         })
                         .output()
                         .unwrap();
-
                     if is_redirection {
                         std::fs::write(to_file, &out.stdout).unwrap();
                         stderr().write_all(&out.stderr).unwrap();
+                    } else if is_err_redirection {
+                        std::fs::write(to_file, &out.stderr).unwrap();
+                        stdout().write_all(&out.stdout).unwrap();
                     } else {
                         stdout().write_all(&out.stdout).unwrap();
                         if out.stdout.last() != Some(&b'\n') {

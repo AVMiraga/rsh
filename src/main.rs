@@ -100,6 +100,7 @@ fn main() {
                     std::fs::write(to_file, from_content.join(" ")).unwrap();
                 } else if is_err_redirection {
                     println!("{}", from_content.join(" ").trim());
+                    std::fs::write(to_file, "").unwrap();
                 } else {
                     println!("{}", arguments.join(" ").trim());
                 }

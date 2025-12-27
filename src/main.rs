@@ -98,6 +98,8 @@ fn main() {
             "echo" => {
                 if is_redirection {
                     std::fs::write(to_file, from_content.join(" ")).unwrap();
+                } else if is_err_redirection {
+                    println!("{}", from_content.join(" ").trim());
                 } else {
                     println!("{}", arguments.join(" ").trim());
                 }

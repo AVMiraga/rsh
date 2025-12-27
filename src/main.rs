@@ -125,13 +125,14 @@ fn main() {
                         .open(&to_file)
                         .unwrap();
 
-                    let mut from_content = from_content.join(" ");
-                    if matches!(
-                        redir_kind,
-                        RedirectionKind::AppendStdout | RedirectionKind::AppendStderr
-                    ) {
-                        from_content.push_str("\n");
-                    }
+                    let from_content = from_content.join(" ");
+
+                    // if matches!(
+                    //     redir_kind,
+                    //     RedirectionKind::AppendStdout | RedirectionKind::AppendStderr
+                    // ) {
+                    //     from_content.push_str("\n");
+                    // }
 
                     match redir_kind {
                         RedirectionKind::Stdout | RedirectionKind::AppendStdout => {
@@ -215,6 +216,9 @@ fn main() {
 
                         match redir_kind {
                             RedirectionKind::Stdout | RedirectionKind::AppendStdout => {
+                                if is_append {
+                                    file.write_all(b"\n").unwrap();
+                                }
                                 file.write_all(&out.stdout).unwrap();
                                 stderr().write_all(&out.stderr).unwrap();
                             }

@@ -137,6 +137,7 @@ fn main() {
                     match redir_kind {
                         RedirectionKind::Stdout | RedirectionKind::AppendStdout => {
                             file.write_all(from_content.as_bytes()).unwrap();
+                            file.write_all("\n".as_bytes()).unwrap();
                         }
                         RedirectionKind::Stderr | RedirectionKind::AppendStderr => {
                             file.write_all("".as_bytes()).unwrap();
@@ -216,9 +217,6 @@ fn main() {
 
                         match redir_kind {
                             RedirectionKind::Stdout | RedirectionKind::AppendStdout => {
-                                if is_append {
-                                    file.write_all(b"\n").unwrap();
-                                }
                                 file.write_all(&out.stdout).unwrap();
                                 stderr().write_all(&out.stderr).unwrap();
                             }

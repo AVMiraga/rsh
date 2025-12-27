@@ -134,8 +134,10 @@ fn main() {
                     if is_redirection && out.status.success() {
                         std::fs::write(to_file, &out.stdout).unwrap();
                     } else {
-                        // stdout().write_all(&out.stdout).unwrap();
-                        println!("{}", String::from_utf8(out.stdout).unwrap());
+                        stdout().write_all(&out.stdout).unwrap();
+                        if out.stdout.last() != Some(&b'\n') {
+                            println!("newline");
+                        }
                         stderr().write_all(&out.stderr).unwrap();
                     }
                 }

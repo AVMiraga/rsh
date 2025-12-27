@@ -126,7 +126,12 @@ fn main() {
                         .unwrap();
 
                     let mut from_content = from_content.join(" ");
-                    from_content.push_str("\n");
+                    if matches!(
+                        redir_kind,
+                        RedirectionKind::AppendStdout | RedirectionKind::AppendStderr
+                    ) {
+                        from_content.push_str("\n");
+                    }
 
                     match redir_kind {
                         RedirectionKind::Stdout | RedirectionKind::AppendStdout => {
@@ -189,7 +194,7 @@ fn main() {
                         .output()
                         .unwrap();
 
-                    if to_file.is_empty() || !out.status.success() {
+                    if to_file.is_empty() {
                         stdout().write_all(&out.stdout).unwrap();
                         if out.status.success() && out.stdout.last() != Some(&b'\n') {
                             println!();

@@ -96,7 +96,7 @@ fn main() -> std::io::Result<()> {
                             continue;
                         }
 
-                        if expect_completions {
+                        if expect_completions && possible_cmd.len() > 1 {
                             disable_raw_mode()?;
                             print!("\r\n");
                             print!("{}\n", possible_cmd.join("  "));

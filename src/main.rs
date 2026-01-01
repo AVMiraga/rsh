@@ -13,18 +13,7 @@ use std::{
     process::Command,
 };
 
-const VALID_COMMANDS_BUILTIN: &[&str] = &[
-    "echo",
-    "exit",
-    "type",
-    "pwd",
-    "cd",
-    ".",
-    "..",
-    "xyz_foo",
-    "xyz_foo_bar",
-    "xyz_foo_bar_baz",
-];
+const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", ".", ".."];
 
 fn lcp(strings: Vec<String>) -> String {
     if strings.is_empty() {

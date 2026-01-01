@@ -126,7 +126,7 @@ fn main() -> std::io::Result<()> {
 
                         if !lcp_possible_command.is_empty() {
                             command = lcp_possible_command;
-                            print!("\r\x1b[2K$ {} ", command);
+                            print!("\r\x1b[2K$ {}", command);
                             stdout().flush()?;
                         } else {
                             if expect_completions && possible_cmd.len() > 1 {

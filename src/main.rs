@@ -124,7 +124,7 @@ fn main() -> std::io::Result<()> {
 
                         let lcp_possible_command = lcp(possible_cmd.clone());
 
-                        if !lcp_possible_command.is_empty() {
+                        if !lcp_possible_command.is_empty() && possible_cmd.len() > 1 {
                             command = lcp_possible_command;
                             print!("\r\x1b[2K$ {}", command);
                             stdout().flush()?;

@@ -2,7 +2,7 @@ use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, read};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use pathsearch::find_executable_in_path;
 use shlex::split;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::DirEntry;
 use std::os::unix::fs::MetadataExt;
 use std::{
@@ -52,6 +52,10 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
+
+    cmds.extend(VALID_COMMANDS_BUILTIN.iter().map(|s| s.to_string()));
+    let set_cmds = cmds.into_iter().collect::<HashSet<String>>();
+    let cmds = set_cmds.into_iter().collect::<Vec<_>>();
 
     let mut expect_completions = false;
 

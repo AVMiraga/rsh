@@ -13,10 +13,43 @@ use std::{
     process::Command,
 };
 
-const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", ".", ".."];
+const VALID_COMMANDS_BUILTIN: &[&str] = &[
+    "echo",
+    "exit",
+    "type",
+    "pwd",
+    "cd",
+    ".",
+    "..",
+    "xyz_foo",
+    "xyz_foo_bar",
+    "xyz_foo_bar_baz",
+];
+
+fn lcp(strings: Vec<String>) -> String {
+    if strings.is_empty() {
+        return String::new();
+    }
+
+    let mut sorted_strings = strings.to_vec();
+    sorted_strings.sort_unstable();
+
+    let first = sorted_strings.first().unwrap();
+    let last = sorted_strings.last().unwrap();
+
+    let lcp_len = first
+        .chars()
+        .zip(last.chars())
+        .take_while(|&(c1, c2)| c1 == c2)
+        .count();
+
+    first[..lcp_len].to_string()
+}
 
 #[test]
-fn testing() {}
+fn testing() {
+    let possible_cmds = vec![];
+}
 
 enum RedirectionKind {
     Stdout,
@@ -92,30 +125,38 @@ fn main() -> std::io::Result<()> {
                             .map(|x| x.to_string())
                             .collect();
 
-                        possible_cmd.sort();
-
                         if possible_cmd.is_empty() {
                             print!("\x07");
                             stdout().flush()?;
                             continue;
                         }
 
-                        if expect_completions && possible_cmd.len() > 1 {
-                            disable_raw_mode()?;
-                            print!("\r\n");
-                            print!("{}\n", possible_cmd.join("  "));
-                            print!("$ {}", command);
+                        possible_cmd.sort();
+
+                        let lcp_possible_command = lcp(possible_cmd.clone());
+
+                        if !lcp_possible_command.is_empty() {
+                            command = lcp_possible_command;
+                            print!("\r\x1b[2K$ {}", command);
                             stdout().flush()?;
                         } else {
-                            if possible_cmd.len() > 1 && !expect_completions {
-                                expect_completions = true;
-                                print!("\x07");
+                            if expect_completions && possible_cmd.len() > 1 {
+                                disable_raw_mode()?;
+                                print!("\r\n");
+                                print!("{}\n", possible_cmd.join("  "));
+                                print!("$ {}", command);
                                 stdout().flush()?;
                             } else {
-                                command = possible_cmd[0].to_string() + " ";
-                                print!("\r\x1b[2K$ {}", command);
+                                if possible_cmd.len() > 1 && !expect_completions {
+                                    expect_completions = true;
+                                    print!("\x07");
+                                    stdout().flush()?;
+                                } else {
+                                    command = possible_cmd[0].to_string() + " ";
+                                    print!("\r\x1b[2K$ {}", command);
 
-                                stdout().flush()?;
+                                    stdout().flush()?;
+                                }
                             }
                         }
                     }

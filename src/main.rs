@@ -13,7 +13,9 @@ use std::{
     process::Command,
 };
 
-const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", ".", ".."];
+const VALID_COMMANDS_BUILTIN: &[&str] = &[
+    "echo", "exit", "type", "pwd", "cd", ".", "..", "xyz_cow", "xyz_rat", "xyz_pig",
+];
 
 fn lcp(strings: Vec<String>) -> String {
     if strings.is_empty() {
@@ -124,7 +126,10 @@ fn main() -> std::io::Result<()> {
 
                         let lcp_possible_command = lcp(possible_cmd.clone());
 
-                        if !lcp_possible_command.is_empty() && possible_cmd.len() > 1 {
+                        if !lcp_possible_command.is_empty()
+                            && possible_cmd.len() > 1
+                            && !lcp_possible_command.eq_ignore_ascii_case(&command)
+                        {
                             command = lcp_possible_command;
                             print!("\r\x1b[2K$ {}", command);
                             stdout().flush()?;

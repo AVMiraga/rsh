@@ -1,7 +1,8 @@
-use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, ModifierKeyCode, read};
+use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, read};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use pathsearch::find_executable_in_path;
 use shlex::split;
+use std::os::unix::fs::MetadataExt;
 use std::{
     env::{self, current_dir, set_current_dir},
     fs::OpenOptions,
@@ -13,7 +14,28 @@ use std::{
 const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", ".", ".."];
 
 #[test]
-fn testing() {}
+fn testing() {
+    let mut cmds = Vec::<String>::new();
+
+    if let Some(path) = env::var_os("PATH") {
+        for e in env::split_paths(&path) {
+            if let Ok(p) = e.read_dir() {
+                p.filter_map(Result::ok)
+                    .filter_map(|ep| {
+                        let meta = ep.metadata().ok()?;
+                        if meta.mode() & 0o111 != 0 {
+                            Some(ep.path())
+                        } else {
+                            None
+                        }
+                    })
+                    .for_each(|path| {
+                        cmds.push(path.file_name().unwrap().to_string_lossy().into_owned());
+                    });
+            }
+        }
+    }
+}
 
 enum RedirectionKind {
     Stdout,
@@ -23,7 +45,7 @@ enum RedirectionKind {
 }
 
 fn main() -> std::io::Result<()> {
-    'main_loop: loop {
+    loop {
         let mut command = String::new();
 
         // stdin().read_line(&mut command).unwrap();
@@ -49,7 +71,36 @@ fn main() -> std::io::Result<()> {
                             stdout().flush()?;
                             continue;
                         }
-                        let possible_cmd: Vec<String> = VALID_COMMANDS_BUILTIN
+
+                        let mut cmds = Vec::<String>::new();
+
+                        if let Some(path) = env::var_os("PATH") {
+                            for e in env::split_paths(&path) {
+                                if let Ok(p) = e.read_dir() {
+                                    p.filter_map(Result::ok)
+                                        .filter_map(|ep| {
+                                            let meta = ep.metadata().ok()?;
+                                            if meta.mode() & 0o111 != 0 {
+                                                Some(ep.path())
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .for_each(|path| {
+                                            cmds.push(
+                                                path.file_name()
+                                                    .unwrap()
+                                                    .to_string_lossy()
+                                                    .into_owned(),
+                                            );
+                                        });
+                                }
+                            }
+                        }
+
+                        cmds.extend(VALID_COMMANDS_BUILTIN.iter().map(|s| s.to_string()));
+
+                        let possible_cmd: Vec<String> = cmds
                             .iter()
                             .filter(|x| x.starts_with(command.as_str()))
                             .map(|x| x.to_string())

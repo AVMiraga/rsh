@@ -51,6 +51,11 @@ fn main() -> std::io::Result<()> {
 
                 match k.code {
                     KeyCode::Tab => {
+                        if command.is_empty() {
+                            print!("\x07");
+                            stdout().flush()?;
+                            continue;
+                        }
                         let possible_cmd: Vec<String> = VALID_COMMANDS_BUILTIN
                             .iter()
                             .filter(|x| x.starts_with(command.as_str()))
@@ -58,9 +63,10 @@ fn main() -> std::io::Result<()> {
                             .collect();
                         if possible_cmd.is_empty() {
                             print!("\x07");
+                            stdout().flush()?;
                             continue;
                         }
-                        command = possible_cmd[0].to_string();
+                        command = possible_cmd[0].to_string() + " ";
                         print!("\r\x1b[2K$ {}", command);
 
                         stdout().flush()?;

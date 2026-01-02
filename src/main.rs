@@ -54,7 +54,7 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
                 "exit" => std::process::exit(0),
                 "echo" => {
                     let mut builtin_output = arguments.join(" ");
-                    let builtin_output = builtin_output.trim();
+                    let builtin_output = format!("{}\n", builtin_output.trim());
                     let mut fake_process = Command::new("cat")
                         .stdin(Stdio::piped())
                         .stdout(Stdio::piped())

@@ -13,7 +13,8 @@ use std::{
     process::{Command, Stdio},
 };
 
-const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", ".", ".."];
+const VALID_COMMANDS_BUILTIN: &[&str] =
+    &["echo", "exit", "type", "pwd", "cd", "history", ".", ".."];
 
 fn lcp(strings: Vec<String>) -> String {
     if strings.is_empty() {
@@ -208,6 +209,7 @@ enum RedirectionKind {
 
 fn main() -> std::io::Result<()> {
     let mut cmds = Vec::<String>::new();
+    let mut local_history = Vec::<String>::new();
 
     if let Some(path) = env::var_os("PATH") {
         for e in env::split_paths(&path) {
@@ -313,7 +315,8 @@ fn main() -> std::io::Result<()> {
                     }
                     KeyCode::Char('j') if k.modifiers.contains(KeyModifiers::CONTROL) => {
                         disable_raw_mode()?;
-                        run_sh(&mut command)?;
+                        local_history.push(command.clone());
+                        run_sh(&mut command, &local_history)?;
                         print!("\r$ ");
                         stdout().flush()?;
                     }
@@ -324,7 +327,8 @@ fn main() -> std::io::Result<()> {
                     }
                     KeyCode::Enter => {
                         disable_raw_mode()?;
-                        run_sh(&mut command)?;
+                        local_history.push(command.clone());
+                        run_sh(&mut command, &local_history)?;
                         print!("\r$ ");
                         stdout().flush()?;
                     }
@@ -342,7 +346,7 @@ fn main() -> std::io::Result<()> {
     }
 }
 
-fn run_sh(command: &mut String) -> std::io::Result<()> {
+fn run_sh(command: &mut String, local_history: &Vec<String>) -> std::io::Result<()> {
     let redirections = [
         (vec![">", "1>"], RedirectionKind::Stdout),
         (vec!["2>"], RedirectionKind::Stderr),
@@ -428,6 +432,11 @@ fn run_sh(command: &mut String) -> std::io::Result<()> {
         }
         "pwd" => {
             println!("{}", current_dir()?.to_str().unwrap());
+        }
+        "history" => {
+            for (i, cmd) in local_history.iter().enumerate() {
+                println!("    {}: {}", i + 1, cmd);
+            }
         }
         "." => {
             set_current_dir(current_dir()?)?;

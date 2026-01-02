@@ -42,6 +42,7 @@ fn lcp(strings: Vec<String>) -> String {
 fn pipeline_handler(command: &str) -> std::io::Result<bool> {
     let cmds = command.split(" | ").collect::<Vec<&str>>();
     let mut last_output: Option<Stdio> = None;
+    let mut children = Vec::new();
 
     if cmds.len() > 1 {
         for (i, cmd) in cmds.iter().enumerate() {
@@ -60,11 +61,18 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
                 .spawn()?;
 
             last_output = child_process.stdout.take().map(Stdio::from);
-            child_process.wait()?;
+
+            children.push(child_process);
         }
         stdout().flush()?;
+
+        for mut child in children {
+            let _ = child.wait();
+        }
+
         return Ok(true);
     }
+
     Ok(false)
 }
 

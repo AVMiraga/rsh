@@ -2,15 +2,15 @@ use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, read};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use pathsearch::find_executable_in_path;
 use shlex::split;
-use std::collections::{HashMap, HashSet};
-use std::fs::DirEntry;
+use std::collections::HashSet;
 use std::os::unix::fs::MetadataExt;
+use std::process::Output;
 use std::{
     env::{self, current_dir, set_current_dir},
     fs::OpenOptions,
     io::{Write, stderr, stdout},
     path::Path,
-    process::Command,
+    process::{Command, Stdio},
 };
 
 const VALID_COMMANDS_BUILTIN: &[&str] = &["echo", "exit", "type", "pwd", "cd", ".", ".."];
@@ -35,9 +35,53 @@ fn lcp(strings: Vec<String>) -> String {
     first[..lcp_len].to_string()
 }
 
+// First command wont have stdin, only stdout with pipe
+// middle command will have both stdin and stdout
+// last command should stdout immedietly
+
+fn pipeline_handler(command: &str) -> std::io::Result<bool> {
+    let cmds = command.split(" | ").collect::<Vec<&str>>();
+    let mut last_output: Option<Stdio> = None;
+
+    if cmds.len() > 1 {
+        for (i, cmd) in cmds.iter().enumerate() {
+            let whole_command = split(cmd.trim()).unwrap_or([].to_vec());
+            let command = whole_command.first().unwrap();
+            let arguments = whole_command[1..].to_vec();
+
+            let mut child_process = Command::new(command)
+                .args(&arguments)
+                .stdin(last_output.unwrap_or(Stdio::inherit()))
+                .stdout(if i == cmds.len() - 1 {
+                    Stdio::inherit()
+                } else {
+                    Stdio::piped()
+                })
+                .spawn()?;
+
+            last_output = child_process.stdout.take().map(Stdio::from);
+            child_process.wait()?;
+        }
+        stdout().flush()?;
+        return Ok(true);
+    }
+    Ok(false)
+}
+
 #[test]
-fn testing() {
-    let possible_cmds = vec![];
+fn testing() -> anyhow::Result<()> {
+    let command = "cat test.txt | wc | wc";
+    let pipelined = pipeline_handler(command);
+
+    Ok(())
+
+    // for cmd in pipelined {
+    //     let whole_command = split(cmd.trim()).unwrap_or([].to_vec());
+    //     let command = whole_command.first().unwrap();
+    //     let arguments = whole_command[1..].to_vec();
+    //
+    //
+    // }
 }
 
 enum RedirectionKind {
@@ -155,6 +199,8 @@ fn main() -> std::io::Result<()> {
                     KeyCode::Char('j') if k.modifiers.contains(KeyModifiers::CONTROL) => {
                         disable_raw_mode()?;
                         run_sh(&mut command)?;
+                        print!("\r$ ");
+                        stdout().flush()?;
                     }
                     KeyCode::Char(c) => {
                         command.push(c);
@@ -164,6 +210,8 @@ fn main() -> std::io::Result<()> {
                     KeyCode::Enter => {
                         disable_raw_mode()?;
                         run_sh(&mut command)?;
+                        print!("\r$ ");
+                        stdout().flush()?;
                     }
                     KeyCode::Backspace => {
                         if command.len() > 0 {
@@ -179,7 +227,7 @@ fn main() -> std::io::Result<()> {
     }
 }
 
-fn run_sh(mut command: &mut String) -> std::io::Result<()> {
+fn run_sh(command: &mut String) -> std::io::Result<()> {
     let redirections = [
         (vec![">", "1>"], RedirectionKind::Stdout),
         (vec!["2>"], RedirectionKind::Stderr),
@@ -194,6 +242,12 @@ fn run_sh(mut command: &mut String) -> std::io::Result<()> {
     }
     println!();
     stdout().flush()?;
+
+    if pipeline_handler(command)? {
+        command.clear();
+        return Ok(());
+    }
+
     let whole_command = split(command.trim()).unwrap_or([].to_vec());
     command.clear();
     let command = whole_command.first().unwrap();
@@ -321,7 +375,5 @@ fn run_sh(mut command: &mut String) -> std::io::Result<()> {
             _ => println!("{}: command not found", &command.trim()),
         },
     }
-    print!("\r$ ");
-    stdout().flush()?;
     Ok(())
 }

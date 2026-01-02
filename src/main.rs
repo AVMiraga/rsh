@@ -53,24 +53,86 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
             match command.trim() {
                 "exit" => std::process::exit(0),
                 "echo" => {
-                    println!("{}", arguments.join(" ").trim());
+                    let mut builtin_output = arguments.join(" ");
+                    let builtin_output = builtin_output.trim();
+                    let mut fake_process = Command::new("cat")
+                        .stdin(Stdio::piped())
+                        .stdout(Stdio::piped())
+                        .spawn()?;
+
+                    if let Some(mut fake_stdin) = fake_process.stdin.take() {
+                        fake_stdin.write_all(builtin_output.as_bytes())?;
+                    }
+
+                    last_output = fake_process.stdout.take().map(Stdio::from);
+                    children.push(fake_process);
                 }
                 "type" => {
                     if VALID_COMMANDS_BUILTIN.contains(&arguments.join(" ").trim()) {
-                        println!("{} is a shell builtin", arguments.join(" ").trim());
+                        let mut builtin_output = arguments.join(" ");
+                        let builtin_output =
+                            format!("{} is a shell builtin", builtin_output.trim());
+
+                        let mut fake_process = Command::new("cat")
+                            .stdin(Stdio::piped())
+                            .stdout(Stdio::piped())
+                            .spawn()?;
+
+                        if let Some(mut fake_stdin) = fake_process.stdin.take() {
+                            fake_stdin.write_all(builtin_output.as_bytes())?;
+                        }
+
+                        last_output = fake_process.stdout.take().map(Stdio::from);
+                        children.push(fake_process);
                     } else if let Some(path) = find_executable_in_path(&arguments.join(" ").trim())
                     {
-                        println!(
-                            "{} is {}",
-                            &arguments.join(" ").trim(),
-                            path.to_str().unwrap()
-                        );
+                        let mut builtin_output = arguments.join(" ");
+                        let builtin_output =
+                            format!("{} is {}", builtin_output.trim(), path.to_str().unwrap());
+
+                        let mut fake_process = Command::new("cat")
+                            .stdin(Stdio::piped())
+                            .stdout(Stdio::piped())
+                            .spawn()?;
+
+                        if let Some(mut fake_stdin) = fake_process.stdin.take() {
+                            fake_stdin.write_all(builtin_output.as_bytes())?;
+                        }
+
+                        last_output = fake_process.stdout.take().map(Stdio::from);
+                        children.push(fake_process);
                     } else {
-                        println!("{}: not found", arguments.join(" ").trim());
+                        let mut builtin_output = arguments.join(" ");
+                        let builtin_output = format!("{}: not found", builtin_output.trim());
+
+                        let mut fake_process = Command::new("cat")
+                            .stdin(Stdio::piped())
+                            .stdout(Stdio::piped())
+                            .spawn()?;
+
+                        if let Some(mut fake_stdin) = fake_process.stdin.take() {
+                            fake_stdin.write_all(builtin_output.as_bytes())?;
+                        }
+
+                        last_output = fake_process.stdout.take().map(Stdio::from);
+                        children.push(fake_process);
                     }
                 }
                 "pwd" => {
-                    println!("{}", current_dir()?.to_str().unwrap());
+                    let mut builtin_output = arguments.join(" ");
+                    let builtin_output = format!("{}", current_dir()?.to_str().unwrap());
+
+                    let mut fake_process = Command::new("cat")
+                        .stdin(Stdio::piped())
+                        .stdout(Stdio::piped())
+                        .spawn()?;
+
+                    if let Some(mut fake_stdin) = fake_process.stdin.take() {
+                        fake_stdin.write_all(builtin_output.as_bytes())?;
+                    }
+
+                    last_output = fake_process.stdout.take().map(Stdio::from);
+                    children.push(fake_process);
                 }
                 _ => {
                     let mut child_process = Command::new(command)

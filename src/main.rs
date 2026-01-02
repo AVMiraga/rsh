@@ -435,7 +435,7 @@ fn run_sh(command: &mut String, local_history: &Vec<String>) -> std::io::Result<
         }
         "history" => {
             for (i, cmd) in local_history.iter().enumerate() {
-                println!("    {}: {}", i + 1, cmd);
+                println!("    {} {}", i + 1, cmd);
             }
         }
         "." => {

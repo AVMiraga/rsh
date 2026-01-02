@@ -1,9 +1,3 @@
-Cargo.lock
-Cargo.toml
-README.md
-codecrafters.yml
-output.txt
-src
-target
-test.txt
-your_program.sh
+1. apple banana
+2. orange strawberry
+3. blueberry pineapple

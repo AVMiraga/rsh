@@ -37,7 +37,7 @@ fn lcp(strings: Vec<String>) -> String {
 
 // First command wont have stdin, only stdout with pipe
 // middle command will have both stdin and stdout
-// last command should stdout immedietly
+// last command should stdout immediately
 
 fn pipeline_handler(command: &str) -> std::io::Result<bool> {
     let cmds = command.split(" | ").collect::<Vec<&str>>();
@@ -50,19 +50,44 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
             let command = whole_command.first().unwrap();
             let arguments = whole_command[1..].to_vec();
 
-            let mut child_process = Command::new(command)
-                .args(&arguments)
-                .stdin(last_output.unwrap_or(Stdio::inherit()))
-                .stdout(if i == cmds.len() - 1 {
-                    Stdio::inherit()
-                } else {
-                    Stdio::piped()
-                })
-                .spawn()?;
+            match command.trim() {
+                "exit" => std::process::exit(0),
+                "echo" => {
+                    println!("{}", arguments.join(" ").trim());
+                }
+                "type" => {
+                    if VALID_COMMANDS_BUILTIN.contains(&arguments.join(" ").trim()) {
+                        println!("{} is a shell builtin", arguments.join(" ").trim());
+                    } else if let Some(path) = find_executable_in_path(&arguments.join(" ").trim())
+                    {
+                        println!(
+                            "{} is {}",
+                            &arguments.join(" ").trim(),
+                            path.to_str().unwrap()
+                        );
+                    } else {
+                        println!("{}: not found", arguments.join(" ").trim());
+                    }
+                }
+                "pwd" => {
+                    println!("{}", current_dir()?.to_str().unwrap());
+                }
+                _ => {
+                    let mut child_process = Command::new(command)
+                        .args(&arguments)
+                        .stdin(last_output.unwrap_or(Stdio::inherit()))
+                        .stdout(if i == cmds.len() - 1 {
+                            Stdio::inherit()
+                        } else {
+                            Stdio::piped()
+                        })
+                        .spawn()?;
 
-            last_output = child_process.stdout.take().map(Stdio::from);
+                    last_output = child_process.stdout.take().map(Stdio::from);
 
-            children.push(child_process);
+                    children.push(child_process);
+                }
+            }
         }
         stdout().flush()?;
 

@@ -2,6 +2,7 @@ use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, read};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use pathsearch::find_executable_in_path;
 use shlex::split;
+use std::cmp::max;
 use std::collections::HashSet;
 use std::os::unix::fs::MetadataExt;
 use std::process::Output;
@@ -434,7 +435,16 @@ fn run_sh(command: &mut String, local_history: &Vec<String>) -> std::io::Result<
             println!("{}", current_dir()?.to_str().unwrap());
         }
         "history" => {
-            for (i, cmd) in local_history.iter().enumerate() {
+            let mut history_size: usize = local_history.len();
+            if !arguments.is_empty() {
+                history_size = arguments[0].parse::<usize>().unwrap_or(local_history.len());
+            }
+            let history_skip = if history_size > local_history.len() {
+                0
+            } else {
+                local_history.len() - history_size
+            };
+            for (i, cmd) in local_history.iter().enumerate().skip(history_skip) {
                 println!("    {} {}", i + 1, cmd);
             }
         }

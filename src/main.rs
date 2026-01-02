@@ -57,7 +57,11 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
                     let builtin_output = format!("{}\n", builtin_output.trim());
                     let mut fake_process = Command::new("cat")
                         .stdin(Stdio::piped())
-                        .stdout(Stdio::piped())
+                        .stdout(if i == cmds.len() - 1 {
+                            Stdio::inherit()
+                        } else {
+                            Stdio::piped()
+                        })
                         .spawn()?;
 
                     if let Some(mut fake_stdin) = fake_process.stdin.take() {
@@ -71,11 +75,15 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
                     if VALID_COMMANDS_BUILTIN.contains(&arguments.join(" ").trim()) {
                         let mut builtin_output = arguments.join(" ");
                         let builtin_output =
-                            format!("{} is a shell builtin", builtin_output.trim());
+                            format!("{} is a shell builtin\n", builtin_output.trim());
 
                         let mut fake_process = Command::new("cat")
                             .stdin(Stdio::piped())
-                            .stdout(Stdio::piped())
+                            .stdout(if i == cmds.len() - 1 {
+                                Stdio::inherit()
+                            } else {
+                                Stdio::piped()
+                            })
                             .spawn()?;
 
                         if let Some(mut fake_stdin) = fake_process.stdin.take() {
@@ -88,11 +96,15 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
                     {
                         let mut builtin_output = arguments.join(" ");
                         let builtin_output =
-                            format!("{} is {}", builtin_output.trim(), path.to_str().unwrap());
+                            format!("{} is {}\n", builtin_output.trim(), path.to_str().unwrap());
 
                         let mut fake_process = Command::new("cat")
                             .stdin(Stdio::piped())
-                            .stdout(Stdio::piped())
+                            .stdout(if i == cmds.len() - 1 {
+                                Stdio::inherit()
+                            } else {
+                                Stdio::piped()
+                            })
                             .spawn()?;
 
                         if let Some(mut fake_stdin) = fake_process.stdin.take() {
@@ -103,11 +115,15 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
                         children.push(fake_process);
                     } else {
                         let mut builtin_output = arguments.join(" ");
-                        let builtin_output = format!("{}: not found", builtin_output.trim());
+                        let builtin_output = format!("{}: not found\n", builtin_output.trim());
 
                         let mut fake_process = Command::new("cat")
                             .stdin(Stdio::piped())
-                            .stdout(Stdio::piped())
+                            .stdout(if i == cmds.len() - 1 {
+                                Stdio::inherit()
+                            } else {
+                                Stdio::piped()
+                            })
                             .spawn()?;
 
                         if let Some(mut fake_stdin) = fake_process.stdin.take() {
@@ -120,11 +136,15 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
                 }
                 "pwd" => {
                     let mut builtin_output = arguments.join(" ");
-                    let builtin_output = format!("{}", current_dir()?.to_str().unwrap());
+                    let builtin_output = format!("{}\n", current_dir()?.to_str().unwrap());
 
                     let mut fake_process = Command::new("cat")
                         .stdin(Stdio::piped())
-                        .stdout(Stdio::piped())
+                        .stdout(if i == cmds.len() - 1 {
+                            Stdio::inherit()
+                        } else {
+                            Stdio::piped()
+                        })
                         .spawn()?;
 
                     if let Some(mut fake_stdin) = fake_process.stdin.take() {

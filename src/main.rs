@@ -251,8 +251,11 @@ fn main() -> std::io::Result<()> {
         print!("\r$ ");
         stdout().flush()?;
 
+        let mut idx = 0;
+
         loop {
             enable_raw_mode()?;
+
             if let Event::Key(k) = read()? {
                 if k.kind != KeyEventKind::Press {
                     continue;
@@ -317,6 +320,7 @@ fn main() -> std::io::Result<()> {
                     KeyCode::Char('j') if k.modifiers.contains(KeyModifiers::CONTROL) => {
                         disable_raw_mode()?;
                         local_history.push(command.clone());
+                        idx = 0;
                         run_sh(&mut command, &local_history)?;
                         print!("\r$ ");
                         stdout().flush()?;
@@ -329,9 +333,26 @@ fn main() -> std::io::Result<()> {
                     KeyCode::Enter => {
                         disable_raw_mode()?;
                         local_history.push(command.clone());
+                        idx = 0;
                         run_sh(&mut command, &local_history)?;
                         print!("\r$ ");
                         stdout().flush()?;
+                    }
+                    KeyCode::Up => {
+                        if local_history.len() > 0 && idx < local_history.len() {
+                            idx += 1;
+                            command = local_history[local_history.len() - idx].clone();
+                            print!("\r\x1b[2K$ {}", command);
+                            stdout().flush()?;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if local_history.len() > 0 && idx > 1 {
+                            idx -= 1;
+                            command = local_history[local_history.len() - idx].clone();
+                            print!("\r\x1b[2K$ {}", command);
+                            stdout().flush()?;
+                        }
                     }
                     KeyCode::Backspace => {
                         if command.len() > 0 {

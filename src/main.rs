@@ -187,7 +187,7 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
 
 #[test]
 fn testing() -> anyhow::Result<()> {
-    let command = "cat test.txt | wc | wc";
+    let command = "history -r";
     let pipelined = pipeline_handler(command);
 
     Ok(())
@@ -321,7 +321,7 @@ fn main() -> std::io::Result<()> {
                         disable_raw_mode()?;
                         local_history.push(command.clone());
                         idx = 0;
-                        run_sh(&mut command, &local_history)?;
+                        run_sh(&mut command, &mut local_history)?;
                         print!("\r$ ");
                         stdout().flush()?;
                     }
@@ -334,7 +334,7 @@ fn main() -> std::io::Result<()> {
                         disable_raw_mode()?;
                         local_history.push(command.clone());
                         idx = 0;
-                        run_sh(&mut command, &local_history)?;
+                        run_sh(&mut command, &mut local_history)?;
                         print!("\r$ ");
                         stdout().flush()?;
                     }
@@ -368,7 +368,7 @@ fn main() -> std::io::Result<()> {
     }
 }
 
-fn run_sh(command: &mut String, local_history: &Vec<String>) -> std::io::Result<()> {
+fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Result<()> {
     let redirections = [
         (vec![">", "1>"], RedirectionKind::Stdout),
         (vec!["2>"], RedirectionKind::Stderr),
@@ -457,16 +457,34 @@ fn run_sh(command: &mut String, local_history: &Vec<String>) -> std::io::Result<
         }
         "history" => {
             let mut history_size: usize = local_history.len();
+            let mut skip_print = false;
+
             if !arguments.is_empty() {
-                history_size = arguments[0].parse::<usize>().unwrap_or(local_history.len());
+                let arg = &arguments[0];
+
+                if arg == "-r" && arguments.len() > 1 {
+                    let file = &arguments[1];
+                    let file_content = std::fs::read_to_string(file)?;
+
+                    let file_content = file_content.lines().collect::<Vec<&str>>();
+                    local_history.extend(file_content.iter().map(ToString::to_string));
+
+                    skip_print = true;
+                }
+
+                history_size = arg.parse::<usize>().unwrap_or(local_history.len());
             }
+
             let history_skip = if history_size > local_history.len() {
                 0
             } else {
                 local_history.len() - history_size
             };
-            for (i, cmd) in local_history.iter().enumerate().skip(history_skip) {
-                println!("    {} {}", i + 1, cmd);
+
+            if !skip_print {
+                for (i, cmd) in local_history.iter().enumerate().skip(history_skip) {
+                    println!("    {} {}", i + 1, cmd);
+                }
             }
         }
         "." => {

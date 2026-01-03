@@ -470,6 +470,14 @@ fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Res
                     local_history.extend(file_content.iter().map(ToString::to_string));
 
                     skip_print = true;
+                } else if arg == "-w" && arguments.len() > 1 {
+                    let file = &arguments[1];
+                    let mut file = OpenOptions::new().create(true).write(true).open(file)?;
+
+                    file.write_all(local_history.join("\n").as_bytes())?;
+                    file.write_all("\n".as_bytes())?;
+
+                    skip_print = true;
                 }
 
                 history_size = arg.parse::<usize>().unwrap_or(local_history.len());

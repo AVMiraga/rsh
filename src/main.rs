@@ -2,10 +2,8 @@ use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, read};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use pathsearch::find_executable_in_path;
 use shlex::split;
-use std::cmp::max;
 use std::collections::HashSet;
 use std::os::unix::fs::MetadataExt;
-use std::process::Output;
 use std::{
     env::{self, current_dir, set_current_dir},
     fs::OpenOptions,
@@ -185,6 +183,18 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
     Ok(false)
 }
 
+fn get_history() -> Vec<String> {
+    let hist_file_path_env = env::var_os("HISTFILE").unwrap();
+
+    let file_path = hist_file_path_env.to_str().unwrap();
+
+    std::fs::read_to_string(&file_path)
+        .unwrap()
+        .lines()
+        .map(String::from)
+        .collect()
+}
+
 #[test]
 fn testing() -> anyhow::Result<()> {
     let command = "history -r";
@@ -211,6 +221,12 @@ enum RedirectionKind {
 fn main() -> std::io::Result<()> {
     let mut cmds = Vec::<String>::new();
     let mut local_history = Vec::<String>::new();
+
+    let existing_history = get_history();
+
+    if !existing_history.is_empty() {
+        local_history.extend(existing_history);
+    }
 
     if let Some(path) = env::var_os("PATH") {
         for e in env::split_paths(&path) {
@@ -409,7 +425,20 @@ fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Res
         }
     }
     match command.trim() {
-        "exit" => std::process::exit(0),
+        "exit" => {
+            let file_path = std::env::var_os("HISTFILE").unwrap();
+
+            let mut file = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .write(true)
+                .open(file_path)?;
+
+            file.write_all(local_history.join("\n").as_bytes())?;
+            file.write_all("\n".as_bytes())?;
+
+            std::process::exit(0);
+        }
         "echo" => {
             if to_file.is_empty() {
                 println!("{}", arguments.join(" ").trim());

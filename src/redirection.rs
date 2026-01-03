@@ -1,4 +1,5 @@
 /// Enum representing different types of output redirection
+#[derive(Clone, Copy)]
 pub enum RedirectionKind {
     Stdout,
     Stderr,

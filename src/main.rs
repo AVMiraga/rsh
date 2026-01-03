@@ -37,7 +37,7 @@ fn lcp(strings: Vec<String>) -> String {
     first[..lcp_len].to_string()
 }
 
-// First command wont have stdin, only stdout with pipe
+// First command won't have stdin, only stdout with pipe
 // middle command will have both stdin and stdout
 // last command should stdout immediately
 
@@ -490,21 +490,27 @@ fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Res
 
                     let history_slice = local_history
                         .iter()
-                        .position(|s| s.starts_with(&search_str))
-                        .and_then(|i| {
-                            local_history[i + 1..]
-                                .iter()
-                                .rposition(|s| s.starts_with(&search_str))
-                                .map(|j| {
-                                    let real_j = i + 1 + j;
-                                    local_history[i..real_j].to_vec()
-                                })
-                                .or(Some(local_history[..].to_vec()))
-                        })
-                        .unwrap_or_else(|| local_history.to_vec());
+                        .rev()
+                        .enumerate()
+                        .filter(|&(_, s)| *s == search_str)
+                        .take(2)
+                        .map(|(i, _)| local_history.len() - i)
+                        .collect::<Vec<usize>>();
 
-                    file.write_all(history_slice.join("\n").as_bytes())?;
-                    file.write_all("\n".as_bytes())?;
+                    //as it is reversed, we need to slice reversed, if it contains one occurrence
+                    //then it happened once
+
+                    if (history_slice.len() > 1) {
+                        file.write_all(
+                            local_history[history_slice[1]..history_slice[0]]
+                                .join("\n")
+                                .as_bytes(),
+                        )?;
+                        file.write_all("\n".as_bytes())?;
+                    } else {
+                        file.write_all(local_history[..].join("\n").as_bytes())?;
+                        file.write_all("\n".as_bytes())?;
+                    }
                     skip_print = true;
                 }
 

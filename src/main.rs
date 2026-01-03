@@ -227,6 +227,7 @@ fn main() -> std::io::Result<()> {
     let mut local_history = Vec::<String>::new();
 
     let existing_history = get_history();
+    let mut continue_idx: usize = 0;
 
     if !existing_history.is_empty() {
         local_history.extend(existing_history);
@@ -431,6 +432,7 @@ fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Res
     match command.trim() {
         "exit" => {
             let file_path = std::env::var_os("HISTFILE");
+            let existing_history_len = get_history().len();
 
             if let Some(file_path) = file_path {
                 let mut file = OpenOptions::new()
@@ -439,7 +441,7 @@ fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Res
                     .write(true)
                     .open(file_path)?;
 
-                file.write_all(local_history.join("\n").as_bytes())?;
+                file.write_all(local_history[existing_history_len..].join("\n").as_bytes())?;
                 file.write_all("\n".as_bytes())?;
             }
 

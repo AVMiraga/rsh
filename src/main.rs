@@ -184,15 +184,19 @@ fn pipeline_handler(command: &str) -> std::io::Result<bool> {
 }
 
 fn get_history() -> Vec<String> {
-    let hist_file_path_env = env::var_os("HISTFILE").unwrap();
+    let hist_file_path_env = env::var_os("HISTFILE");
 
-    let file_path = hist_file_path_env.to_str().unwrap();
+    if let Some(hist_file_path) = hist_file_path_env {
+        let file_path = hist_file_path.to_str().unwrap();
 
-    std::fs::read_to_string(&file_path)
-        .unwrap()
-        .lines()
-        .map(String::from)
-        .collect()
+        std::fs::read_to_string(&file_path)
+            .unwrap()
+            .lines()
+            .map(String::from)
+            .collect::<Vec<String>>()
+    } else {
+        Vec::<String>::new()
+    }
 }
 
 #[test]
@@ -426,16 +430,18 @@ fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Res
     }
     match command.trim() {
         "exit" => {
-            let file_path = std::env::var_os("HISTFILE").unwrap();
+            let file_path = std::env::var_os("HISTFILE");
 
-            let mut file = OpenOptions::new()
-                .append(true)
-                .create(true)
-                .write(true)
-                .open(file_path)?;
+            if let Some(file_path) = file_path {
+                let mut file = OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .write(true)
+                    .open(file_path)?;
 
-            file.write_all(local_history.join("\n").as_bytes())?;
-            file.write_all("\n".as_bytes())?;
+                file.write_all(local_history.join("\n").as_bytes())?;
+                file.write_all("\n".as_bytes())?;
+            }
 
             std::process::exit(0);
         }

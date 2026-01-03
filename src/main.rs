@@ -478,6 +478,34 @@ fn run_sh(command: &mut String, local_history: &mut Vec<String>) -> std::io::Res
                     file.write_all("\n".as_bytes())?;
 
                     skip_print = true;
+                } else if arg == "-a" && arguments.len() > 1 {
+                    let file_name = &arguments[1];
+                    let mut file = OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .append(true)
+                        .open(file_name)?;
+
+                    let search_str = format!("history -a {}", file_name);
+
+                    let history_slice = local_history
+                        .iter()
+                        .position(|s| s.starts_with(&search_str))
+                        .and_then(|i| {
+                            local_history[i + 1..]
+                                .iter()
+                                .rposition(|s| s.starts_with(&search_str))
+                                .map(|j| {
+                                    let real_j = i + 1 + j;
+                                    local_history[i..real_j].to_vec()
+                                })
+                                .or(Some(local_history[..].to_vec()))
+                        })
+                        .unwrap_or_else(|| local_history.to_vec());
+
+                    file.write_all(history_slice.join("\n").as_bytes())?;
+                    file.write_all("\n".as_bytes())?;
+                    skip_print = true;
                 }
 
                 history_size = arg.parse::<usize>().unwrap_or(local_history.len());
